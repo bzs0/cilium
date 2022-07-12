@@ -22,6 +22,7 @@ var (
 		DebugPolicy:         &specDebugPolicy,
 		DropNotify:          &specDropNotify,
 		TraceNotify:         &specTraceNotify,
+		TraceSockNotify:     &specTraceSockNotify,
 		PolicyVerdictNotify: &specPolicyVerdictNotify,
 		PolicyAuditMode:     &specPolicyAuditMode,
 		MonitorAggregation:  &specMonitorAggregation,

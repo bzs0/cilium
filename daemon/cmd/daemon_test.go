@@ -91,6 +91,7 @@ func TestMain(m *testing.M) {
 	}
 	option.Config.Opts.SetBool(option.DropNotify, true)
 	option.Config.Opts.SetBool(option.TraceNotify, true)
+	option.Config.Opts.SetBool(option.TraceSockNotify, true)
 	option.Config.Opts.SetBool(option.PolicyVerdictNotify, true)
 
 	// Disable restore of host IPs for unit tests. There can be arbitrary

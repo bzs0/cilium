@@ -12,6 +12,7 @@ const (
 	DebugPolicy         = "DebugPolicy"
 	DropNotify          = "DropNotification"
 	TraceNotify         = "TraceNotification"
+	TraceSockNotify     = "TraceSockNotification"
 	PolicyVerdictNotify = "PolicyVerdictNotification"
 	PolicyAuditMode     = "PolicyAuditMode"
 	MonitorAggregation  = "MonitorAggregationLevel"
@@ -56,6 +57,11 @@ var (
 	specTraceNotify = Option{
 		Define:      "TRACE_NOTIFY",
 		Description: "Enable trace notifications",
+	}
+
+	specTraceSockNotify = Option{
+		Define:      "TRACE_SOCK_NOTIFY",
+		Description: "Enable socket trace notifications",
 	}
 
 	specPolicyVerdictNotify = Option{
