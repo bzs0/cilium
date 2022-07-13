@@ -9,6 +9,8 @@ import (
 	"encoding/gob"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/cilium/cilium/pkg/byteorder"
 	"github.com/cilium/cilium/pkg/hubble/parser/getters"
 	"github.com/cilium/cilium/pkg/monitor"
@@ -249,6 +251,9 @@ func (m *MonitorFormatter) FormatSample(data []byte, cpu int) {
 		m.policyVerdictEvents(prefix, data)
 	case monitorAPI.MessageTypeRecCapture:
 		m.recorderCaptureEvents(prefix, data)
+	case monitorAPI.MessageTypeTraceSock:
+		log.Infof("sock-traces-debug %+v %v", data, messageType)
+		fmt.Printf("%s Sock event: %+v\n", prefix, data)
 	default:
 		fmt.Printf("%s Unknown event: %+v\n", prefix, data)
 	}
