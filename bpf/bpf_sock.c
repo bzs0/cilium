@@ -16,6 +16,7 @@
 #include "lib/identity.h"
 #include "lib/metrics.h"
 #include "lib/nat_46x64.h"
+#include "lib/trace_sock.h"
 
 #define SYS_REJECT	0
 #define SYS_PROCEED	1
@@ -340,6 +341,10 @@ static __always_inline int __sock4_xlate_fwd(struct bpf_sock_addr *ctx,
 #ifdef ENABLE_L7_LB
 	struct lb4_backend l7backend;
 #endif
+	__u64 sock_cookie = sock_local_cookie(ctx_full);
+	struct bpf_sock *sk = ctx_full->sk;
+	__be32 src_ip = 0;
+	__be16 src_port = 0;
 
 	if (is_defined(ENABLE_SOCKET_LB_HOST_ONLY) && !in_hostns)
 		return -ENXIO;
@@ -356,6 +361,15 @@ static __always_inline int __sock4_xlate_fwd(struct bpf_sock_addr *ctx,
 		svc = sock4_wildcard_lookup_full(&key, in_hostns);
 	if (!svc)
 		return -ENXIO;
+
+	if (sk) {
+		src_ip = sk->src_ip4;
+		src_port = ctx_src_port(sk);
+		printk("bpf_sock-fwd-pres: sock_cookie src_port proto %llu %u %d\n", sock_cookie, src_ip, src_port);
+	}
+	send_trace_sock_notify4(ctx_full, XLATE_PRE_DIRECTION_FWD, src_ip, dst_ip,
+		src_port, dst_port, sock_cookie, ctx_full->protocol);
+	
 
 	/* Do not perform service translation for external IPs
 	 * that are not a local address because we don't want
@@ -444,6 +458,10 @@ static __always_inline int __sock4_xlate_fwd(struct bpf_sock_addr *ctx,
 
 	if (lb4_svc_is_affinity(svc) && !backend_from_affinity)
 		lb4_update_affinity_by_netns(svc, &id, backend_id);
+
+	printk("bpf_sock-fwd-postd: sock_cookie dst_port dst_ip %llu %u %d\n", sock_cookie, backend->address, backend->port);
+	send_trace_sock_notify4(ctx_full, XLATE_POST_DIRECTION_FWD, src_ip, backend->address,
+		src_port, backend->port, sock_cookie, ctx_full->protocol);
 #ifdef ENABLE_L7_LB
 out:
 #endif
@@ -587,7 +605,18 @@ static __always_inline int __sock4_xlate_rev(struct bpf_sock_addr *ctx,
 		.address	= dst_ip,
 		.port		= dst_port,
 	};
+	__be32 src_ip = 0;
+	__be16 src_port = 0;
+	__u64 sock_cookie = key.cookie;
+	struct bpf_sock *sk = ctx_full->sk;
 
+	if (sk) {
+		src_ip = sk->src_ip4;
+		src_port = ctx_src_port(sk);
+		printk("bpf_sock-rev-pres: sock_cookie src_port proto %llu %u %d\n", sock_cookie, src_ip, src_port);
+	}
+	send_trace_sock_notify4(ctx_full, XLATE_PRE_DIRECTION_REV, src_ip, dst_ip,
+		src_port, dst_port, sock_cookie, ctx_full->protocol);
 	val = map_lookup_elem(&LB4_REVERSE_NAT_SK_MAP, &key);
 	if (val) {
 		struct lb4_service *svc;
@@ -608,6 +637,9 @@ static __always_inline int __sock4_xlate_rev(struct bpf_sock_addr *ctx,
 
 		ctx->user_ip4 = val->address;
 		ctx_set_port(ctx, val->port);
+		printk("bpf_sock-rev-postd: sock_cookie dst_port dst_ip %llu %u %d\n", sock_cookie, val->address, ctx->user_port);
+		send_trace_sock_notify4(ctx_full, XLATE_POST_DIRECTION_REV, src_ip, val->address,
+			src_port, val->port, sock_cookie, ctx_full->protocol);
 		return 0;
 	}
 
