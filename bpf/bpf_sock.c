@@ -328,9 +328,11 @@ static __always_inline int __sock4_xlate_fwd(struct bpf_sock_addr *ctx,
 	const bool in_hostns = ctx_in_hostns(ctx_full, &id.client_cookie);
 	struct lb4_backend *backend;
 	struct lb4_service *svc;
+	__u16 dst_port = ctx_dst_port(ctx);
+	__u32 dst_ip = ctx->user_ip4;
 	struct lb4_key key = {
-		.address	= ctx->user_ip4,
-		.dport		= ctx_dst_port(ctx),
+		.address	= dst_ip,
+		.dport		= dst_port,
 	}, orig_key = key;
 	struct lb4_service *backend_slot;
 	bool backend_from_affinity = false;
@@ -578,10 +580,12 @@ static __always_inline int __sock4_xlate_rev(struct bpf_sock_addr *ctx,
 					     struct bpf_sock_addr *ctx_full)
 {
 	struct ipv4_revnat_entry *val;
+	__u16 dst_port = ctx_dst_port(ctx);
+	__u32 dst_ip = ctx->user_ip4;
 	struct ipv4_revnat_tuple key = {
 		.cookie		= sock_local_cookie(ctx_full),
-		.address	= ctx->user_ip4,
-		.port		= ctx_dst_port(ctx),
+		.address	= dst_ip,
+		.port		= dst_port,
 	};
 
 	val = map_lookup_elem(&LB4_REVERSE_NAT_SK_MAP, &key);
