@@ -70,9 +70,9 @@ struct trace_sock_notify {
 	__u8 pad : 7;
 } __packed;
 
-static __always_inline l4_protocol
+static __always_inline enum l4_protocol
 parse_protocol(__u32 l4_proto) {
-	switchi (l4_proto) {
+	switch (l4_proto) {
 		case IPPROTO_TCP:
 			return L4_PROTOCOL_TCP;
 		case IPPROTO_UDP:
@@ -84,7 +84,7 @@ parse_protocol(__u32 l4_proto) {
 
 static __always_inline void
 send_trace_sock_notify4(struct __ctx_sock *ctx __maybe_unused,
-    			enum xlate_point point __maybe_unused, __u32 src_ip __maybe_unused,
+    			enum xlate_point xlate_point __maybe_unused, __u32 src_ip __maybe_unused,
 			__u32 dst_ip __maybe_unused, __u16 src_port __maybe_unused,
 			__u16 dst_port __maybe_unused, __u64 sock_cookie __maybe_unused,
 			__u32 l4_proto __maybe_unused)
@@ -94,23 +94,22 @@ send_trace_sock_notify4(struct __ctx_sock *ctx __maybe_unused,
 
 	msg = (typeof(msg)){
 		.type = CILIUM_NOTIFY_TRACE_SOCK,
-		.sub_type = obs_point,
+		.xlate_point = xlate_point,
 		.l4_proto = parse_protocol(l4_proto),
 		.src_ip.ip4 = src_ip,
 		.dst_ip.ip4 = dst_ip,
 		.src_port = src_port,
 		.dst_port = dst_port,
 		.sock_cookie = sock_cookie,
-		.xlate_point = xlate_point,
 		.ipv6 = 0,
 	};
-	if (xlate_dir) {
-		printk("bpf_sock-trace_fwd: sock_cookie dst_ip dst_port %llu %u %d\n",
-			sock_cookie, dst_ip, dst_port);
-	} else {
-		printk("bpf_sock-trace_rev: sock_cookie dst_ip dst_port %llu %u %d\n",
-			sock_cookie, dst_ip, dst_port);
-	}
+	// if (xlate_dir) {
+	// 	printk("bpf_sock-trace_fwd: sock_cookie dst_ip dst_port %llu %u %d\n",
+	// 		sock_cookie, dst_ip, dst_port);
+	// } else {
+	// 	printk("bpf_sock-trace_rev: sock_cookie dst_ip dst_port %llu %u %d\n",
+	// 		sock_cookie, dst_ip, dst_port);
+	// }
 
 	err = ctx_event_output(ctx, &EVENTS_MAP, BPF_F_CURRENT_CPU, &msg, sizeof(msg));
 	printk("bpf_sock-aditi: err %ld\n", err);

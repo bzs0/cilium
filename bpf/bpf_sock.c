@@ -345,6 +345,9 @@ static __always_inline int __sock4_xlate_fwd(struct bpf_sock_addr *ctx,
 	struct bpf_sock *sk = ctx_full->sk;
 	__be32 src_ip = 0;
 	__be16 src_port = 0;
+	__u64 cgroup_id = 0;
+	__u64 cgroup_id_curr = 0;
+	__u64 cgroup_id_root = 0;
 
 	if (is_defined(ENABLE_SOCKET_LB_HOST_ONLY) && !in_hostns)
 		return -ENXIO;
@@ -362,10 +365,14 @@ static __always_inline int __sock4_xlate_fwd(struct bpf_sock_addr *ctx,
 	if (!svc)
 		return -ENXIO;
 
-	if (sk) {
+        cgroup_id_curr = get_current_cgroup_id();
+        if (sk) {
 		src_ip = sk->src_ip4;
 		src_port = ctx_src_port(sk);
-		printk("bpf_sock-fwd-pres: sock_cookie src_port proto %llu %u %d\n", sock_cookie, src_ip, src_port);
+		cgroup_id = get_current_ancestor_cgroup_id(3);
+		cgroup_id_root = get_current_ancestor_cgroup_id(0);
+		printk("bpf_sock-fwd-pres: cgroup-id-ance cgroup-id-curr root %llu %llu %llu\n", cgroup_id, cgroup_id_curr, cgroup_id_root);
+		printk("bpf_sock-fwd-pres: sock_cookie cgroup-id proto %llu %llu %d\n", sock_cookie, cgroup_id, src_port);
 	}
 	send_trace_sock_notify4(ctx_full, XLATE_PRE_DIRECTION_FWD, src_ip, dst_ip,
 		src_port, dst_port, sock_cookie, ctx_full->protocol);

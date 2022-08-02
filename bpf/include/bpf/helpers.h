@@ -104,4 +104,7 @@ static int BPF_FUNC_REMAP(get_socket_opt, void *ctx, int level, int optname,
 			  void *optval, int optlen) =
 	(void *)BPF_FUNC_getsockopt;
 
+static __u64 BPF_FUNC(get_current_ancestor_cgroup_id, int ancestor_level);
+static __u64 BPF_FUNC(get_current_cgroup_id);
+
 #endif /* __BPF_HELPERS__ */
