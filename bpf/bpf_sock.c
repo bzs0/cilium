@@ -346,8 +346,6 @@ static __always_inline int __sock4_xlate_fwd(struct bpf_sock_addr *ctx,
 	__be32 src_ip = 0;
 	__be16 src_port = 0;
 	__u64 cgroup_id = 0;
-	__u64 cgroup_id_curr = 0;
-	__u64 cgroup_id_root = 0;
 
 	if (is_defined(ENABLE_SOCKET_LB_HOST_ONLY) && !in_hostns)
 		return -ENXIO;
@@ -365,17 +363,20 @@ static __always_inline int __sock4_xlate_fwd(struct bpf_sock_addr *ctx,
 	if (!svc)
 		return -ENXIO;
 
-        cgroup_id_curr = get_current_cgroup_id();
+	if (is_defined(BPF_HAVE_ANCESTOR_CGROUP_ID)) {
+		// TODO(Aditi): Agent will push the ancestor level.
+		cgroup_id = get_current_ancestor_cgroup_id(3);
+	} else if (is_defined(BPF_HAVE_CGROUP_ID)) {
+		cgroup_id = get_current_cgroup_id();
+	}
         if (sk) {
 		src_ip = sk->src_ip4;
 		src_port = ctx_src_port(sk);
-		cgroup_id = get_current_ancestor_cgroup_id(3);
-		cgroup_id_root = get_current_ancestor_cgroup_id(0);
-		printk("bpf_sock-fwd-pres: cgroup-id-ance cgroup-id-curr root %llu %llu %llu\n", cgroup_id, cgroup_id_curr, cgroup_id_root);
+		printk("bpf_sock-fwd-pres: cgroup-id  %llu\n", cgroup_id);
 		printk("bpf_sock-fwd-pres: sock_cookie cgroup-id proto %llu %llu %d\n", sock_cookie, cgroup_id, src_port);
 	}
-	send_trace_sock_notify4(ctx_full, XLATE_PRE_DIRECTION_FWD, src_ip, dst_ip,
-		src_port, dst_port, sock_cookie, ctx_full->protocol);
+	send_trace_sock_notify4(ctx_full, XLATE_PRE_DIRECTION_FWD, dst_ip, dst_port, 
+		sock_cookie, cgroup_id, ctx_full->protocol);
 	
 
 	/* Do not perform service translation for external IPs
@@ -467,8 +468,8 @@ static __always_inline int __sock4_xlate_fwd(struct bpf_sock_addr *ctx,
 		lb4_update_affinity_by_netns(svc, &id, backend_id);
 
 	printk("bpf_sock-fwd-postd: sock_cookie dst_port dst_ip %llu %u %d\n", sock_cookie, backend->address, backend->port);
-	send_trace_sock_notify4(ctx_full, XLATE_POST_DIRECTION_FWD, src_ip, backend->address,
-		src_port, backend->port, sock_cookie, ctx_full->protocol);
+	send_trace_sock_notify4(ctx_full, XLATE_POST_DIRECTION_FWD, backend->address, backend->port, 
+		sock_cookie, cgroup_id, ctx_full->protocol);
 #ifdef ENABLE_L7_LB
 out:
 #endif
@@ -614,16 +615,23 @@ static __always_inline int __sock4_xlate_rev(struct bpf_sock_addr *ctx,
 	};
 	__be32 src_ip = 0;
 	__be16 src_port = 0;
-	__u64 sock_cookie = key.cookie;
 	struct bpf_sock *sk = ctx_full->sk;
+	__u64 sock_cookie = key.cookie;
+	__u64 cgroup_id = 0;
 
+	if (is_defined(BPF_HAVE_ANCESTOR_CGROUP_ID)) {
+		// TODO(Aditi): Agent will push the ancestor level.
+		cgroup_id = get_current_ancestor_cgroup_id(3);
+	} else if (is_defined(BPF_HAVE_CGROUP_ID)) {
+		cgroup_id = get_current_cgroup_id();
+	}
 	if (sk) {
 		src_ip = sk->src_ip4;
 		src_port = ctx_src_port(sk);
-		printk("bpf_sock-rev-pres: sock_cookie src_port proto %llu %u %d\n", sock_cookie, src_ip, src_port);
+		printk("bpf_sock-rev-pres: sock_cookie cgroup_id proto %llu %llu %d\n", sock_cookie, cgroup_id, src_port);
 	}
-	send_trace_sock_notify4(ctx_full, XLATE_PRE_DIRECTION_REV, src_ip, dst_ip,
-		src_port, dst_port, sock_cookie, ctx_full->protocol);
+	send_trace_sock_notify4(ctx_full, XLATE_PRE_DIRECTION_REV, dst_ip, dst_port,
+		sock_cookie, cgroup_id, ctx_full->protocol);
 	val = map_lookup_elem(&LB4_REVERSE_NAT_SK_MAP, &key);
 	if (val) {
 		struct lb4_service *svc;
@@ -645,8 +653,8 @@ static __always_inline int __sock4_xlate_rev(struct bpf_sock_addr *ctx,
 		ctx->user_ip4 = val->address;
 		ctx_set_port(ctx, val->port);
 		printk("bpf_sock-rev-postd: sock_cookie dst_port dst_ip %llu %u %d\n", sock_cookie, val->address, ctx->user_port);
-		send_trace_sock_notify4(ctx_full, XLATE_POST_DIRECTION_REV, src_ip, val->address,
-			src_port, val->port, sock_cookie, ctx_full->protocol);
+		send_trace_sock_notify4(ctx_full, XLATE_POST_DIRECTION_REV, val->address, val->port,
+			sock_cookie, cgroup_id, ctx_full->protocol);
 		return 0;
 	}
 

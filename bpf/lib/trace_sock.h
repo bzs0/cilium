@@ -10,10 +10,9 @@
  *
  * @ctx:	 socket address buffer
  * @obs_point:	 observation point (TRACE_*)
- * @src_ip:	 source ip address
  * @dst_ip:	 destination ip address
- * @src_port:	 source port
  * @dst_port:	 destination port
+ * @cgroup_id:   pod or container cgroup_id
  * @sock_cookie: socket cookie
  * @xlate_point: service translation point for load-balancing
  * @l4_proto:    layer 4 protocol
@@ -61,10 +60,9 @@ struct trace_sock_notify {
 	__u8 type;
 	__u8 xlate_point;
 	__u8 l4_proto;
-	struct ip src_ip;
 	struct ip dst_ip;
-	__u16 src_port;
 	__u16 dst_port;
+	__u64 cgroup_id;
 	__u64 sock_cookie;
 	__u8 ipv6 : 1;
 	__u8 pad : 7;
@@ -84,9 +82,10 @@ parse_protocol(__u32 l4_proto) {
 
 static __always_inline void
 send_trace_sock_notify4(struct __ctx_sock *ctx __maybe_unused,
-    			enum xlate_point xlate_point __maybe_unused, __u32 src_ip __maybe_unused,
-			__u32 dst_ip __maybe_unused, __u16 src_port __maybe_unused,
-			__u16 dst_port __maybe_unused, __u64 sock_cookie __maybe_unused,
+    			enum xlate_point xlate_point __maybe_unused,
+			__u32 dst_ip __maybe_unused, __u16 dst_port __maybe_unused, 
+			__u64 sock_cookie __maybe_unused, 
+			__u64 cgroup_id __maybe_unused,
 			__u32 l4_proto __maybe_unused)
 {
 	struct trace_sock_notify msg __align_stack_8;
@@ -96,20 +95,12 @@ send_trace_sock_notify4(struct __ctx_sock *ctx __maybe_unused,
 		.type = CILIUM_NOTIFY_TRACE_SOCK,
 		.xlate_point = xlate_point,
 		.l4_proto = parse_protocol(l4_proto),
-		.src_ip.ip4 = src_ip,
 		.dst_ip.ip4 = dst_ip,
-		.src_port = src_port,
 		.dst_port = dst_port,
+		.cgroup_id = cgroup_id,
 		.sock_cookie = sock_cookie,
 		.ipv6 = 0,
 	};
-	// if (xlate_dir) {
-	// 	printk("bpf_sock-trace_fwd: sock_cookie dst_ip dst_port %llu %u %d\n",
-	// 		sock_cookie, dst_ip, dst_port);
-	// } else {
-	// 	printk("bpf_sock-trace_rev: sock_cookie dst_ip dst_port %llu %u %d\n",
-	// 		sock_cookie, dst_ip, dst_port);
-	// }
 
 	err = ctx_event_output(ctx, &EVENTS_MAP, BPF_F_CURRENT_CPU, &msg, sizeof(msg));
 	printk("bpf_sock-aditi: err %ld\n", err);
@@ -117,9 +108,10 @@ send_trace_sock_notify4(struct __ctx_sock *ctx __maybe_unused,
 #else
 static __always_inline void
 send_trace_sock_notify4(struct __ctx_sock *ctx __maybe_unused,
-			enum xlate_point point __maybe_unused, __u32 src_ip __maybe_unused,
-			__u32 dst_ip __maybe_unused, __u16 src_port __maybe_unused,
-			__u16 dst_port __maybe_unused, __u64 sock_cookie __maybe_unused,
+    			enum xlate_point xlate_point __maybe_unused,
+			__u32 dst_ip __maybe_unused, __u16 dst_port __maybe_unused, 
+			__u64 sock_cookie __maybe_unused,
+			__u64 cgroup_id __maybe_unused,
 			__u32 l4_proto __maybe_unused)
 {
 
