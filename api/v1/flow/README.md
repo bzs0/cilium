@@ -47,6 +47,7 @@
     - [IPVersion](#flow-IPVersion)
     - [L7FlowType](#flow-L7FlowType)
     - [LostEventSource](#flow-LostEventSource)
+    - [SocketTranslationPoint](#flow-SocketTranslationPoint)
     - [TraceObservationPoint](#flow-TraceObservationPoint)
     - [TrafficDirection](#flow-TrafficDirection)
     - [Verdict](#flow-Verdict)
@@ -284,6 +285,7 @@ EventTypeFilter is a filter describing a particular event type
 | debug_capture_point | [DebugCapturePoint](#flow-DebugCapturePoint) |  | Only applicable to cilium debug capture events, blank for other types |
 | interface | [NetworkInterface](#flow-NetworkInterface) |  | interface is the network interface on which this flow was observed |
 | proxy_port | [uint32](#uint32) |  | proxy_port indicates the port of the proxy to which the flow was forwarded |
+| sock_xlate_point | [SocketTranslationPoint](#flow-SocketTranslationPoint) |  | Only applicable to cilium sock notifications, blank for other types |
 | Summary | [string](#string) |  | **Deprecated.** This is a temporary workaround to support summary field for pb.Flow without duplicating logic from the old parser. This field will be removed once we fully migrate to the new parser. |
 
 
@@ -914,6 +916,7 @@ EventType are constants are based on the ones from &lt;linux/perf_event.h&gt;.
 | UNKNOWN_TYPE | 0 |  |
 | L3_L4 | 1 | not sure about the underscore here, but `L34` also reads strange |
 | L7 | 2 |  |
+| SOCK | 3 |  |
 
 
 
@@ -956,6 +959,21 @@ This enum corresponds to Cilium&#39;s L7 accesslog FlowType:
 | PERF_EVENT_RING_BUFFER | 1 | PERF_EVENT_RING_BUFFER indicates that events were dropped in the BPF perf event ring buffer, indicating that userspace agent did not keep up with the events produced by the datapath. |
 | OBSERVER_EVENTS_QUEUE | 2 | OBSERVER_EVENTS_QUEUE indicates that events were dropped because the Hubble events queue was full, indicating that the Hubble observer did not keep up. |
 | HUBBLE_RING_BUFFER | 3 | HUBBLE_RING_BUFFER indicates that the event was dropped because it could not be read from Hubble&#39;s ring buffer in time before being overwritten. |
+
+
+
+<a name="flow-SocketTranslationPoint"></a>
+
+### SocketTranslationPoint
+This mirrors enum xlate_point in bpf/lib/trace_sock.h
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SOCK_XLATE_POINT_UNKNWON | 0 | TODO This does not match the bpf definition, but we want 0 value to represent unknown |
+| SOCK_XLATE_POINT_PRE_DIRECTION_FWD | 1 | Pre service translation |
+| SOCK_XLATE_POINT_POST_DIRECTION_FWD | 2 | Post service translation |
+| SOCK_XLATE_POINT_PRE_DIRECTION_REV | 3 | Pre reverse service translation |
+| SOCK_XLATE_POINT_POST_DIRECTION_REV | 4 | Post reverse service translation |
 
 
 

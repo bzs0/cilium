@@ -34,6 +34,7 @@ type FlowType = flow.FlowType
 const FlowType_UNKNOWN_TYPE = flow.FlowType_UNKNOWN_TYPE
 const FlowType_L3_L4 = flow.FlowType_L3_L4
 const FlowType_L7 = flow.FlowType_L7
+const FlowType_SOCK = flow.FlowType_SOCK
 
 var FlowType_name = flow.FlowType_name
 var FlowType_value = flow.FlowType_value
@@ -211,6 +212,17 @@ const AgentEventType_SERVICE_DELETED = flow.AgentEventType_SERVICE_DELETED
 
 var AgentEventType_name = flow.AgentEventType_name
 var AgentEventType_value = flow.AgentEventType_value
+
+type SocketTranslationPoint = flow.SocketTranslationPoint
+
+const SocketTranslationPoint_SOCK_XLATE_POINT_UNKNWON = flow.SocketTranslationPoint_SOCK_XLATE_POINT_UNKNWON
+const SocketTranslationPoint_SOCK_XLATE_POINT_PRE_DIRECTION_FWD = flow.SocketTranslationPoint_SOCK_XLATE_POINT_PRE_DIRECTION_FWD
+const SocketTranslationPoint_SOCK_XLATE_POINT_POST_DIRECTION_FWD = flow.SocketTranslationPoint_SOCK_XLATE_POINT_POST_DIRECTION_FWD
+const SocketTranslationPoint_SOCK_XLATE_POINT_PRE_DIRECTION_REV = flow.SocketTranslationPoint_SOCK_XLATE_POINT_PRE_DIRECTION_REV
+const SocketTranslationPoint_SOCK_XLATE_POINT_POST_DIRECTION_REV = flow.SocketTranslationPoint_SOCK_XLATE_POINT_POST_DIRECTION_REV
+
+var SocketTranslationPoint_name = flow.SocketTranslationPoint_name
+var SocketTranslationPoint_value = flow.SocketTranslationPoint_value
 
 type DebugEventType = flow.DebugEventType
 
