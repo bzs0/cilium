@@ -64,10 +64,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f03ac48505955848960e80bbb68046aa35c7b9e7 # v2.4.1
 
-      - name: Login to quay.io
+      - name: Login to ghcr.io
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
         with:
-          registry: quay.io
+          registry: ghcr.io
           username: ${{ secrets.QUAY_BETA_USERNAME }}
           password: ${{ secrets.QUAY_BETA_PASSWORD }}
 
@@ -80,7 +80,7 @@ jobs:
         id: tag-in-repositories
         shell: bash
         run: |
-          if docker buildx imagetools inspect quay.io/${{ env.QUAY_ORGANIZATION_DEV }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.tag }} &>/dev/null; then
+          if docker buildx imagetools inspect ghcr.io/bzs0/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.tag }} &>/dev/null; then
             echo "Tag already exists!"
             exit 1
           fi
@@ -100,7 +100,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            quay.io/${{ env.QUAY_ORGANIZATION_DEV }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.tag }}
+            ghcr.io/bzs0/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.tag }}
           target: release
           build-args: |
             OPERATOR_VARIANT=${{ matrix.name }}
@@ -112,7 +112,7 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: "true"
         run: |
-          cosign sign quay.io/${{ env.QUAY_ORGANIZATION_DEV }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}@${{ steps.docker_build_release.outputs.digest }}
+          cosign sign ghcr.io/bzs0/${{ matrix.name }}-${{ github.event.inputs.suffix }}@${{ steps.docker_build_release.outputs.digest }}
 
       - name: Install Bom
         shell: bash
@@ -127,20 +127,20 @@ jobs:
         # To-Do: format SBOM output to json after cosign v2.0 is released with https://github.com/sigstore/cosign/pull/2479
         run: |
           bom generate -o sbom_${{ matrix.name }}_${{ github.event.inputs.tag }}.spdx \
-          --image=quay.io/${{ env.QUAY_ORGANIZATION_DEV }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.tag }}
+          --image=ghcr.io/bzs0/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.tag }}
 
       - name: Attach SBOM to Container Image
         run: |
-          cosign attach sbom --sbom sbom_${{ matrix.name }}_${{ github.event.inputs.tag }}.spdx quay.io/${{ env.QUAY_ORGANIZATION_DEV }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}@${{ steps.docker_build_release.outputs.digest }}
+          cosign attach sbom --sbom sbom_${{ matrix.name }}_${{ github.event.inputs.tag }}.spdx ghcr.io/bzs0/${{ matrix.name }}-${{ github.event.inputs.suffix }}@${{ steps.docker_build_release.outputs.digest }}
 
       - name: Sign SBOM Image
         env:
           COSIGN_EXPERIMENTAL: "true"
         run: |
           docker_build_release_digest="${{ steps.docker_build_release.outputs.digest }}"
-          image_name="quay.io/${{ env.QUAY_ORGANIZATION_DEV }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${docker_build_release_digest/:/-}.sbom"
+          image_name="ghcr.io/bzs0/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${docker_build_release_digest/:/-}.sbom"
           docker_build_release_sbom_digest="sha256:$(docker buildx imagetools inspect --raw ${image_name} | sha256sum | head -c 64)"
-          cosign sign "quay.io/${{ env.QUAY_ORGANIZATION_DEV }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}@${docker_build_release_sbom_digest}"
+          cosign sign "ghcr.io/bzs0/${{ matrix.name }}-${{ github.event.inputs.suffix }}@${docker_build_release_sbom_digest}"
 
       - name: Image Release Digest
         shell: bash
@@ -148,7 +148,7 @@ jobs:
           mkdir -p image-digest/
           echo "## ${{ matrix.name }}" > image-digest/${{ matrix.name }}.txt
           echo "" >> image-digest/${{ matrix.name }}.txt
-          echo "\`quay.io/${{ env.QUAY_ORGANIZATION_DEV }}/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ matrix.name }}.txt
+          echo "\`ghcr.io/bzs0/${{ matrix.name }}-${{ github.event.inputs.suffix }}:${{ github.event.inputs.tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ matrix.name }}.txt
           echo "" >> image-digest/${{ matrix.name }}.txt
 
       # Upload artifact digests
