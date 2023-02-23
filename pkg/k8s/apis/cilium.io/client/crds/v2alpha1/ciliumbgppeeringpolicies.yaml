@@ -107,6 +107,39 @@ spec:
                   description: CiliumBGPVirtualRouter defines a discrete BGP virtual
                     router configuration.
                   properties:
+                    additionalRoutes:
+                      description: AdditionalRoutes is a list of BGP Routes to be
+                        announced for this virtual router
+                      items:
+                        description: CiliumBGPAdditionalRoutes defines a manually
+                          injected route
+                        properties:
+                          afi:
+                            description: AFI is the Address Family Indicator, one
+                              of 'ipv4' or 'ipv6'
+                            enum:
+                            - ipv4
+                            - ipv6
+                            type: string
+                          cidrs:
+                            description: CIDRs is a list of Routes to be advertised
+                            format: cidr
+                            items:
+                              type: string
+                            minItems: 1
+                            type: array
+                          safi:
+                            description: SAFI is the Subsequent Address Family Indicator,
+                              currently only 'unicast' is supported
+                            enum:
+                            - unicast
+                            type: string
+                        required:
+                        - afi
+                        - cidrs
+                        - safi
+                        type: object
+                      type: array
                     exportPodCIDR:
                       description: ExportPodCIDR determines whether to export the
                         Node's private CIDR block to the configured neighbors.
